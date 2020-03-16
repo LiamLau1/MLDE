@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import tensorflow as tf
 from tensorflow import keras
+import time
 
 np.random.seed(1234)
 tf.set_random_seed(1234)
@@ -9,70 +10,102 @@ tf.set_random_seed(1234)
 # NN classes
 class model:
 
-    def __init__(self, layers):
 
-        # Define self attributes
+   def __init__(self, X, layers):
 
-        # Initialize NN
+       # Define self attributes
+       self.xinput = X
 
-        self.layers = layers
-        self.weights, self.biases = self.initialize_NN(layers)
+       # Initialize NN
 
+       self.layers = layers
+       self.weights, self.biases = self.initialize_NN(layers)
+
+       # tf graphs
+
+       self.f_pred = self.net_DE(self.xinput)
+    
        # Loss
        """Want f(phi, grad_phi) = 0, this squared will be our loss"""
-       self.loss = 
+       self.loss = tf.reduce_mean(tf.square(self.f_pred))
+
+       # Optimizers
+       self.optimizer = tf.contrib.opt.ScipyOptimizerInterface(self.loss, method = 'L-BFGS-B', options = {'maxiter': 50000,'maxfun': 50000,'maxcor': 50,'maxls': 50,'ftol' : 1.0 * np.finfo(float).eps})
+
+       self.optimizer_Adam = tf.train.AdamOptimizer()
+       self.train_op_Adam = self.optimizer_Adam.minimize(self.loss)
+
+   def initialize_NN(self, layers):
+
+       weights = 
+       biases = 
+       num_layers = len(layers) # number of layers
+       # populate the weights and biases tensors
+       for l in range(0, num_layers-1):
+           # return each weight matrix and bias value and append into weights and biases tensors
+           w = self.xavier_init(size = [layers[l], layers[l+1]])
+           # we will initialize bias vector with zeros 
+           b = tf.Variable(tf.zeros([layers[l],1], dtype = tf.float32), dtype = tf.float32)
+           weights.append(w)
+           biases.append(b)
 
 
-       def initialize_NN(self, layers):
+   def xavier_init(self, size):
 
-           weights = 
-           biases = 
-           num_layers = len(layers) # number of layers
-           # populate the weights and biases tensors
-           for l in range(0, num_layers-1):
-               # return each weight matrix and bias value and append into weights and biases tensors
-               w = self.xavier_init(size = [layers[l], layers[l+1]])
-               # we will initialize bias vector with zeros 
-               b = tf.Variable(tf.zeros([layers[l],1], dtype = tf.float32), dtype = tf.float32)
-               weights.append(w)
-               biases.append(b)
+       """ Xavier initialization is such that the initial weights aren't too small or too big. Read the README for more information. """
+       n_in = size[0]
+       n_out = size[1]
+       std = np.sqrt(2/(n_in + n_out))
+       # Use truncated normal distribution of standard deviation std, truncated means if outside 2 sigma, it is repicked.
+       return tf.Variable(tf.truncated_normal([n_in, n_out], mean = 0, stddev = std), dtype = float32)
+
+   def neural_network(self, X_inputs, weights, biases):
+
+       num_layers = len(weights) + 1 # weights is some array of matrix values for weights.
+       # Hidden node values
+       H = []
+       for l in range(0, num_layers-2):
+           W = weights[l]
+           b = biases[l]
+           if l ==0:
+               H_value = tf.tanh(tf.add(tf.matmul(X_inputs, W),biases))
+               H.append(H_value)
+           else:
+               H_value = tf.tanh(tf.add(tf.matmul(H[l], W), biases))
+               H.append(H_value)
+
+       # Output 
+       W = weights[-1]
+       b = biases[-1]
+       # not sure if activation function needed for output node
+       output = tf.add(tf.matmul(H[-1], W), b)
+       
+       return output
+
+   def net_DE(self, x):
+
+       """ Get gradients and combines them to get F hat, value of f for trial solutions. I think n of these functions are needed for a differential equation of order n """
+       with tf.GradientTape(watch_accessed_variables=False) as tape:
+           tape.watch(x))
+           y = self.neural_network(x, self.weights, self.biases)
+           dy_dx = tape.gradient(y, x)
+           F = y + dy_dx
+
+       return F
+
+   def callback(self, loss):
+
+       print('Loss:', loss)
+
+   def train(self, nIter):
+
+       """ For nIter iterations, reduce the loss function ie train the net """
+       start_time = time.time()
+
+       for iteration in range(nIter):
+           self.
+
+    
 
 
-       def xavier_init(self, size):
-
-           """ Xavier initialization is such that the initial weights aren't too small or too big. Read the README for more information. """
-           n_in = size[0]
-           n_out = size[1]
-           std = np.sqrt(2/(n_in + n_out))
-           # Use truncated normal distribution of standard dev std, truncated means if outside 2 sigma, it is repicked.
-           return tf.Variable(tf.truncated_normal([n_in, n_out], mean = 0, stddev = std), dtype = float32)
-
-       def neural_network(self, X_inputs, weights, biases):
-
-           num_layers = len(weights) + 1 # weights is some array of matrix values for weights.
-           # Hidden node values
-           H = []
-           for l in range(0, num_layers-2):
-               W = weights[l]
-               b = biases[l]
-               if l ==0:
-                   H_value = tf.tanh(tf.add(tf.matmul(X_inputs, W),biases))
-                   H.append(H_value)
-               else:
-                   H_value = tf.tanh(tf.add(tf.matmul(H[l], W), biases))
-                   H.append(H_value)
-
-           # Output 
-           W = weights[-1]
-           b = biases[-1]
-           # not sure if activation function needed for output node
-           output = tf.add(tf.matmul(H[-1], W), b)
-           
-           return output
-
-
-
-
-
-
-            
+        
