@@ -22,7 +22,7 @@ def custom_loss_function(input_tensor):
             y = model(input_tensor)
         dy_dx = tape.gradient(y, input_tensor)
         x = tf.Variable([[0]], dtype = tf.float32)
-        return 10*tf.reduce_mean((dy_dx + y)**2) + (y[0] - 1) **2
+        return 100*tf.reduce_mean((dy_dx + y)**2) + (y[0] - 1) **2
     return loss
 
 # set optimizer
