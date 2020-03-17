@@ -10,3 +10,5 @@
     - Methods include: [https://prateekvjoshi.com/2016/03/29/understanding-xavier-initialization-in-deep-neural-networks/](https://prateekvjoshi.com/2016/03/29/understanding-xavier-initialization-in-deep-neural-networks/) and [https://towardsdatascience.com/weight-initialization-techniques-in-neural-networks-26c649eb3b78](https://towardsdatascience.com/weight-initialization-techniques-in-neural-networks-26c649eb3b78)
     - This [paper](https://arxiv.org/pdf/1502.01852.pdf) gives an example of Xavier and when Xavier doesn't work so well (using ReLu or leaky ReLu activation functions)
     - Xavier uses $Var(W_i) = \frac{2}{n_{in} + n_{out}}$
+
+* Seems to me that the boundary condition part of the loss function is stronger. Less variance therefore that point always is pinned (with enough weights). I've scaled the F squared part of the loss for the differential equation, just multiplied by 10, seems to get better fit. Motivation for this is that part is high variance due to the large number of points, therefore should be weighted higher cost to fit in lost function.

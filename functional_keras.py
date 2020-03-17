@@ -6,7 +6,8 @@ import matplotlib.pyplot as plt
 input_tensor = tf.keras.layers.Input(shape=[1])
 hidden = tf.keras.layers.Dense(100, kernel_initializer= 'GlorotNormal', bias_initializer='zeros', activation = tf.nn.sigmoid)(input_tensor)
 hidden1 = tf.keras.layers.Dense(50, kernel_initializer= 'GlorotNormal', bias_initializer='zeros',activation = tf.nn.sigmoid)(hidden)
-output = tf.keras.layers.Dense(1, kernel_initializer= 'GlorotNormal', bias_initializer='zeros',activation = tf.nn.sigmoid)(hidden1)
+hidden2 = tf.keras.layers.Dense(10, kernel_initializer= 'GlorotNormal', bias_initializer='zeros',activation = tf.nn.sigmoid)(hidden1)
+output = tf.keras.layers.Dense(1, kernel_initializer= 'GlorotNormal', bias_initializer='zeros',activation = tf.nn.sigmoid)(hidden2)
 tf.keras.initializers.GlorotNormal
 model = tf.keras.Model(inputs = input_tensor, outputs = output)
 
@@ -21,12 +22,11 @@ def custom_loss_function(input_tensor):
             y = model(input_tensor)
         dy_dx = tape.gradient(y, input_tensor)
         x = tf.Variable([[0]], dtype = tf.float32)
-        return tf.reduce_mean((dy_dx + y)**2) + (y[0] - 1) **2
-
+        return 10*tf.reduce_mean((dy_dx + y)**2) + (y[0] - 1) **2
     return loss
 
 # set optimizer
-optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
+optimizer = tf.keras.optimizers.Adadelta(learning_rate=1.0)
 model.compile(loss=custom_loss_function(input_tensor), optimizer=optimizer, experimental_run_tf_function = False)
 
 x_train = np.linspace(0, 5, 100)
