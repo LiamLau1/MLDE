@@ -5,16 +5,15 @@ from tensorflow import keras
 import time
 
 np.random.seed(1234)
-tf.set_random_seed(1234)
 
 # NN classes
-class model:
+class NN_model:
 
 
    def __init__(self, X, layers):
 
        # Define self attributes
-       self.xinput = X
+       self.xinput = tf.Variable(X, dtype = tf.float32)
 
        # Initialize NN
 
@@ -37,8 +36,8 @@ class model:
 
    def initialize_NN(self, layers):
 
-       weights = 
-       biases = 
+       weights = []
+       biases = []
        num_layers = len(layers) # number of layers
        # populate the weights and biases tensors
        for l in range(0, num_layers-1):
@@ -48,6 +47,8 @@ class model:
            b = tf.Variable(tf.zeros([layers[l],1], dtype = tf.float32), dtype = tf.float32)
            weights.append(w)
            biases.append(b)
+       # This executes
+       return weights, biases
 
 
    def xavier_init(self, size):
@@ -57,7 +58,7 @@ class model:
        n_out = size[1]
        std = np.sqrt(2/(n_in + n_out))
        # Use truncated normal distribution of standard deviation std, truncated means if outside 2 sigma, it is repicked.
-       return tf.Variable(tf.truncated_normal([n_in, n_out], mean = 0, stddev = std), dtype = float32)
+       return tf.Variable(tf.random.truncated_normal([n_in, n_out], mean = 0, stddev = std), dtype = tf.float32)
 
    def neural_network(self, X_inputs, weights, biases):
 
@@ -68,7 +69,10 @@ class model:
            W = weights[l]
            b = biases[l]
            if l ==0:
-               H_value = tf.tanh(tf.add(tf.matmul(X_inputs, W),biases))
+               print(tf.matmul(X_inputs, W))
+               print(tf.add(tf.matmul(X_inputs, W),b))
+               H_value = tf.tanh(tf.add(tf.matmul(X_inputs, W),b))
+               print(H_value)
                H.append(H_value)
            else:
                H_value = tf.tanh(tf.add(tf.matmul(H[l], W), biases))
@@ -86,9 +90,9 @@ class model:
 
        """ Get gradients and combines them to get F hat, value of f for trial solutions. I think n of these functions are needed for a differential equation of order n """
        with tf.GradientTape(watch_accessed_variables=False) as tape:
-           tape.watch(x))
-           y = self.neural_network(x, self.weights, self.biases)
-           dy_dx = tape.gradient(y, x)
+           tape.watch(self.xinput)
+           y = self.neural_network(self.xinput, self.weights, self.biases)
+           dy_dx = tape.gradient(y, self.xinput)
            F = y + dy_dx
 
        return F
@@ -103,9 +107,22 @@ class model:
        start_time = time.time()
 
        for iteration in range(nIter):
-           self.
-
-    
-
-
+           self.train_op_Adam
+           # Print values
+           if it % 10 == 0:
+               elapsed_time = time.time() - start_time
+               loss_value = self.loss
+               print('It: %d, Loss: %.3e, Time: %.2f' % (it, loss_value, elapsed))
+               start_time = time.time()
         
+
+
+
+if __name__ == '__main__':
+
+    layers = [5, 10, 5]
+    Xs = np.array([1,2,3,4,5])
+    Xs = Xs.reshape((1,5))
+    model  = NN_model(Xs, layers)
+
+
