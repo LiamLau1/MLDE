@@ -12,3 +12,4 @@
     - Xavier uses $Var(W_i) = \frac{2}{n_{in} + n_{out}}$
 
 * Seems to me that the boundary condition part of the loss function is stronger. Less variance therefore that point always is pinned (with enough weights). I've scaled the F squared part of the loss for the differential equation, just multiplied by 10, seems to get better fit. Motivation for this is that part is high variance due to the large number of points, therefore should be weighted higher cost to fit in lost function.
+    - I've played around with the scaling of the first term in the loss factor, there seems to be a sweet spot around 100, this should be a parameter?
