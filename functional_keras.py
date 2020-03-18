@@ -39,7 +39,17 @@ history = model.fit(x = x_train, y= x_train, epochs = epochs)
 #Testing prediction
 x_predict = np.linspace(0, 10, 1000)
 y_predict = model.predict(x_predict)
+y_predict = np.reshape(y_predict, newshape = (1000,))
 fig = plt.figure()
 plt.plot(x_predict, y_predict, ".", label = "Prediction $y$")
 plt.plot(x_predict, np.exp(-x_predict))
 
+plt.semilogy(x_predict, y_predict, label = "Prediction")
+plt.semilogy(x_predict, np.exp(-x_predict), label = "Exact solution")
+
+
+plt.plot(x_predict, (y_predict - np.exp(-x_predict)), label = "difference")
+
+epoch = history.epoch
+loss = history.history['loss']
+plt.plot(epoch, loss)
