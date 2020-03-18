@@ -5,9 +5,9 @@ import matplotlib.pyplot as plt
 # Build architecture, connect hidden layer
 input_tensor = tf.keras.layers.Input(shape=[1])
 hidden = tf.keras.layers.Dense(100, kernel_initializer= 'GlorotNormal', bias_initializer='zeros', activation = tf.nn.sigmoid)(input_tensor)
-hidden1 = tf.keras.layers.Dense(50, kernel_initializer= 'GlorotNormal', bias_initializer='zeros',activation = tf.nn.sigmoid)(hidden)
-hidden2 = tf.keras.layers.Dense(10, kernel_initializer= 'GlorotNormal', bias_initializer='zeros',activation = tf.nn.sigmoid)(hidden1)
-output = tf.keras.layers.Dense(1, kernel_initializer= 'GlorotNormal', bias_initializer='zeros',activation = tf.nn.sigmoid)(hidden2)
+#hidden1 = tf.keras.layers.Dense(50, kernel_initializer= 'GlorotNormal', bias_initializer='zeros',activation = tf.nn.sigmoid)(hidden)
+hidden1 = tf.keras.layers.Dense(10, kernel_initializer= 'GlorotNormal', bias_initializer='zeros',activation = tf.nn.sigmoid)(hidden)
+output = tf.keras.layers.Dense(1, kernel_initializer= 'GlorotNormal', bias_initializer='zeros',activation = tf.nn.sigmoid)(hidden1)
 tf.keras.initializers.GlorotNormal
 model = tf.keras.Model(inputs = input_tensor, outputs = output)
 
