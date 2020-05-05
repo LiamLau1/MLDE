@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Build architecture, connect hidden layer
+tf.config.experimental_run_functions_eagerly(True)
 input_tensor = tf.keras.layers.Input(shape=[1])
 hidden = tf.keras.layers.Dense(100, kernel_initializer= 'GlorotNormal', bias_initializer='zeros', activation = tf.nn.sigmoid)(input_tensor)
 #hidden1 = tf.keras.layers.Dense(50, kernel_initializer= 'GlorotNormal', bias_initializer='zeros',activation = tf.nn.sigmoid)(hidden)
@@ -13,6 +14,7 @@ model = tf.keras.Model(inputs = input_tensor, outputs = output)
 
 model.summary()
 
+x = tf.Variable([[0]], dtype = tf.float32)
 def custom_loss_function(input_tensor):
 
     def loss(y_true, y_pred):
@@ -21,8 +23,9 @@ def custom_loss_function(input_tensor):
             tape.watch(input_tensor)
             y = model(input_tensor)
         dy_dx = tape.gradient(y, input_tensor)
-        x = tf.Variable([[0]], dtype = tf.float32)
-        return 100*tf.reduce_mean((dy_dx + y)**2) + (y[0] - 1) **2
+        return tf.reduce_mean((dy_dx + y)**2) + tf.math.exp((y[0] - 1) **2)
+        #return 10000* tf.math.exp((y[0] - 1) **2)
+    #np.exp(-0.01*np.arange(0,100, 1)
     return loss
 
 # set optimizer
@@ -32,7 +35,7 @@ model.compile(loss=custom_loss_function(input_tensor), optimizer=optimizer, expe
 x_train = np.linspace(0, 5, 100)
 x_train = np.reshape(x_train, newshape = (100, 1))
 #Training the neural network
-epochs = 10000
+epochs = 1000
 history = model.fit(x = x_train, y= x_train, epochs = epochs)
 
 
