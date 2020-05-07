@@ -22,7 +22,7 @@ def differential_loss(x):
 
 def custom_loss(x):
     def loss(y_true, y_pred):
-        differential_loss_term = tf.math.reduce_sum(tf.map_fn(differential_loss, x_train_tf))
+        differential_loss_term = tf.math.reduce_sum(tf.map_fn(differential_loss, x))
         boundary_loss_term = tf.square(f(np.asarray([0]))[0][0])
         return differential_loss_term/n + boundary_loss_term
     return loss
@@ -48,12 +48,12 @@ optimizer = tf.keras.optimizers.Adam(learning_rate = 0.001, beta_1 = 0.5, beta_2
 x_train_tf = tf.reshape(tf.convert_to_tensor(np.linspace(0,1,n)), (n,1))
 neural_net.compile(loss = custom_loss(x_train_tf), optimizer = optimizer, experimental_run_tf_function = False)
 epochs = 10000
-fit = neural_net.fit(x = x_train_tf, y = x_train_tf, batch_siz = n, epochs = epochs)
+fit = neural_net.fit(x = x_train_tf, y = x_train_tf, batch_size = n, epochs = epochs)
 
 neural_net.trainable_variables
 #plotting 
 x_predict = tf.convert_to_tensor(np.linspace(0,1, 1000))
-y_predict = neural_net.predict(x_predict)
+y_predict = f(x_predict)
 y_predict = np.reshape(y_predict, 1000)
 #y_true = np.exp(-x_predict)
 y_true = np.exp(-x_predict)*np.sin(x_predict)
@@ -61,3 +61,4 @@ y_true = np.exp(-x_predict)*np.sin(x_predict)
 fig = plt.figure()
 plt.plot(x_predict, y_predict, ".")
 plt.plot(x_predict, y_true)
+

@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 # Set tensorflow backend accuracy
 tf.keras.backend.set_floatx('float64')
-n = 100
+n = 200
 
 # Approximate function
 @tf.function
@@ -48,14 +48,14 @@ neural_net = build_model(i)
 optimizer = tf.keras.optimizers.Adam(learning_rate = 0.001, beta_1 = 0.5, beta_2 = 0.5, epsilon = 1e-07)
 
 # Training (must include initial condition point)
-x_train_tf = tf.reshape(tf.convert_to_tensor(np.linspace(0,1,n)), (n,1))
+x_train_tf = tf.reshape(tf.convert_to_tensor(np.linspace(0,10,n)), (n,1))
 neural_net.compile(loss = custom_loss(x_train_tf), optimizer = optimizer, experimental_run_tf_function = False)
 epochs = 10000
-fit = neural_net.fit(x = x_train_tf, y = x_train_tf, batch_siz = n, epochs = epochs)
+fit = neural_net.fit(x = x_train_tf, y = x_train_tf, batch_size = n, epochs = epochs)
 
 neural_net.trainable_variables
 #plotting 
-x_predict = tf.convert_to_tensor(np.linspace(0,1, 1000))
+x_predict = tf.convert_to_tensor(np.linspace(0,10, 1000))
 y_predict = neural_net.predict(x_predict)
 y_predict = np.reshape(y_predict, 1000)
 #y_true = np.exp(-x_predict)
