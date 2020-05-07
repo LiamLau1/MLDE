@@ -14,16 +14,19 @@ def f(x):
 
 # Custom Cost function
 def differential_loss(x):
-    with tf.GradientTape() as tape:
-        tape.watch(x)
-        y = f(x)
-    dy_dx = tape.gradient(y, x)
-    return tf.square(dy_dx + y - tf.math.exp(-x) * tf.math.cos(x))
+    with tf.GradientTape() as tape1:
+        tape1.watch(x)
+        with tf.GradientTape() as tape2:
+            tape2.watch(x)
+            y = f(x)
+        dy_dx = tape2.gradient(y, x)
+    d2y_dx2 = tape1.gradient(dy_dx,x)
+    return tf.square(d2y_dx2 + x*y)
 
 def custom_loss(x):
     def loss(y_true, y_pred):
         differential_loss_term = tf.math.reduce_sum(tf.map_fn(differential_loss, x_train_tf))
-        boundary_loss_term = tf.square(f(np.asarray([0]))[0][0])
+        boundary_loss_term = 0 #tf.square(f(np.asarray([0]))[0][0])
         return differential_loss_term/n + boundary_loss_term
     return loss
 

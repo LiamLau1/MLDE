@@ -47,7 +47,7 @@ history = model.fit(x = x_train_tf, y = x_train_tf, batch_size = n, epochs = epo
 
 
 #plotting 
-x_predict = np.linspace(0,4, n*100)
+x_predict = np.linspace(0,1, n*100)
 y_predict = model.predict(x_predict)
 y_predict = np.reshape(y_predict, (n*100))
 #y_true = np.exp(-x_predict)
