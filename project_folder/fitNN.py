@@ -34,7 +34,7 @@ def mappable_func(x):
 def custom_loss(x):
     def loss(y_true, y_pred):
         differential_loss = tf.math.reduce_sum(tf.map_fn(mappable_func, x_train_tf))
-        return differential_loss/n +  tf.square(model(np.asarray([0]))[0][0])
+        return differential_loss/n +  tf.square(model(np.asarray([[0]]))[0][0])
     return loss
 
 

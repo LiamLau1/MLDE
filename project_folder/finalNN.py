@@ -23,7 +23,7 @@ def differential_loss(x):
 def custom_loss(x):
     def loss(y_true, y_pred):
         differential_loss_term = tf.math.reduce_sum(tf.map_fn(differential_loss, x))
-        boundary_loss_term = tf.square(f(np.asarray([0]))[0][0])
+        boundary_loss_term = tf.square(f(np.asarray([[0]]))[0][0])
         return differential_loss_term/n + boundary_loss_term
     return loss
 
@@ -40,6 +40,7 @@ def build_model(i):
 # Define Neural network
 i = 10
 neural_net = build_model(i)
+neural_net.summary()
 
 # Define optimization routine
 optimizer = tf.keras.optimizers.Adam(learning_rate = 0.001, beta_1 = 0.5, beta_2 = 0.5, epsilon = 1e-07)
