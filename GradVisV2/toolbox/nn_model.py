@@ -78,7 +78,6 @@ class Tensorflow_NNModel(Base_NNModel):
     def calc_loss(self, trigger_fn, x):
         average_loss=0
         #print(trigger_fn(tf.convert_to_tensor(x)))
-        print(self.number_of_steps)
         """
         for i in range(self.number_of_steps):
             current_loss = trigger_fn(tf.convert_to_tensor(x)) # unsure # needs to recall it
