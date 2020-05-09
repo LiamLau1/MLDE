@@ -1,7 +1,13 @@
+import os
+import sys
+sys.path.append("../GradVis/toolbox")
 import tensorflow as tf
 import itertools
 import numpy as np
 import matplotlib.pyplot as plt
+import Visualization as vis
+import nn_model
+import trajectory_plots as tplot
 
 # Set tensorflow backend accuracy
 tf.keras.backend.set_floatx('float64')
@@ -135,15 +141,17 @@ uaxis, vaxis = np.meshgrid(uparam,vparam)
 zaxis = np.zeros((1000,1000))
 
 #run everytime to test
-np.random.seed(0)
+np.random.seed(5)
 utest = np.random.randn(31)
 vtest = np.random.randn(31)
-loss_surface(copy_fitted_model, theta_star, utest, vtest, 10, 10)
+loss_surface(copy_fitted_model, theta_star, utest, vtest, 0, 0)
+loss_value(neural_net)
 for i in range(10):
     for j in range(10):
         zaxis[i,j] = loss_surface(copy_fitted_model, theta_star, utest, vtest, uaxis[i,j], vaxis[i,j])
 
 plt.contour(uaxis, vaxis,zaxis, levels = 100)
+plt.show()
 ax = plt.axes(projection='3d')
 ax.plot_surface(uaxis, vaxis, zaxis, rstride=1, cstride=1, cmap='viridis', edgecolor='none')
 ax.set_title('surface');
