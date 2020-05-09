@@ -3,6 +3,7 @@ import sys
 sys.path.append("../GradVisV2/toolbox")
 import tensorflow as tf
 import numpy as np
+#import Tkinter as tk
 import matplotlib
 #matplotlib.use('TKAgg')
 import matplotlib.pyplot as plt
@@ -254,6 +255,8 @@ if __name__ == "__main__":
 
 
 solver.neural_net.save_weights('./data/minimum_0')
-nnmodel = nn_model.Tensorflow_NNModel(solver.neural_net, solver.cost_value(tf.convert_to_tensor(solver.x)), './data/minimum_0')
-vis.visualize(nnmodel,'./data/minimum_0', 30, './data/example',random_dir = True, proz = 0.5, verbose=True)
+solver.neural_net.get_weights()
+solver.cost_value(tf.convert_to_tensor(solver.x))
+nnmodel = nn_model.Tensorflow_NNModel(solver.neural_net, solver.cost_value, solver.x, './data/minimum_0')
+vis.visualize(nnmodel,solver.cost_value,solver.x, './data/minimum_0', 30, './data/example',random_dir = True, proz = 0.5, verbose=True)
 tplot.plot_loss_2D('./data/example.npz','./data/plot',is_log=False)

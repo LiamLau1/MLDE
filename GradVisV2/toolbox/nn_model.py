@@ -58,6 +58,7 @@ class Tensorflow_NNModel(Base_NNModel):
         #TODO: make dict of numpy arrays from self.parameter
         print("Done.")
 
+
     def get_parameters(self, filename=None):
         if filename is None:
             return self.parameter
@@ -74,14 +75,19 @@ class Tensorflow_NNModel(Base_NNModel):
         for var in self.model.trainable_variables:
             var.assign(parameter_dict[var.name[:-2]])
 
-
-    def calc_loss(self):
+    def calc_loss(self, trigger_fn, x):
         average_loss=0
+        #print(trigger_fn(tf.convert_to_tensor(x)))
+        print(self.number_of_steps)
+        """
         for i in range(self.number_of_steps):
-            current_loss = self.total_loss # unsure
+            current_loss = trigger_fn(tf.convert_to_tensor(x)) # unsure # needs to recall it
+            # problem is trigger_fn stays the same
             #print(np.argmax(label,axis=1))
             average_loss += current_loss
         average_loss /= self.number_of_steps
+        """
+        average_loss = trigger_fn(tf.convert_to_tensor(x))
         print("Average Loss: "+str(average_loss))
         return average_loss
 

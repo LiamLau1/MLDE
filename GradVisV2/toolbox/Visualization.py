@@ -117,13 +117,14 @@ def get_pca_vec(model, filenames, layer_names, pca_direcs=None):
     return np.array(principalComponents[:,0]),np.array(principalComponents[:,1]),pca.explained_variance_ratio_
 
 
-def cont_loss(model,parameter,alph,bet,get_v,get_w):
+def cont_loss(model,trigger_fn, x,parameter,alph,bet,get_v,get_w):
     """
     Calculates the loss landscape based on vectors v and w (which can be principal components).
     Changes the internal state of model. Executes model.
 
     Args:
         model: nn model, with nn_model.Base_NNModel interface
+        trigger_fn: loss function that returns value
         parameter: weights of the converged net, centered point of analysis
         alph: list of scalars for 1st direction
         bet: scalar for 2nd direction
@@ -138,15 +139,16 @@ def cont_loss(model,parameter,alph,bet,get_v,get_w):
         ind = 0
         # calculate new parameters for model
         for key in parameter:
-            print(key)
             #testi_clone[key] = testi_clone[key].cpu().detach() + al*get_v[ind] + bet*get_w[ind]
             testi_clone[key] = testi_clone[key] + al*get_v[ind] + bet*get_w[ind]
             ind += 1
 
         # load parameters into model and calcualte loss
-        #print(testi_clone)
         model.set_parameters(testi_clone)
-        loss = model.calc_loss()
+        tmp_params = model._tf_params_to_numpy()
+        model.parameter = tmp_params
+        # problem is trigger_fn is the same
+        loss = model.calc_loss(trigger_fn,x)
         vals = np.append(vals,loss)
     return vals
 
@@ -227,13 +229,14 @@ def normalize(parameter,get_v,get_w):
 ################################
 ### Main function
 ################################
-def _visualize(model,filenames,N,random_dir=False,proz=0.5,v_vec=[],w_vec=[],verbose=False,layername=None,pca_dirs=None):
+def _visualize(model,trigger_fn, x, filenames,N,random_dir=False,proz=0.5,v_vec=[],w_vec=[],verbose=False,layername=None,pca_dirs=None):
     """
     Main function to visualize trajectory in parameterspace.
 
     Args:
         model: nn model, with nn_model.Base_NNModel interface
         filenames: list of checkpoint names (files with parameters), orderered with the centerpoint last in list
+        trigger_fn: loss function that returns loss value
         N: number of grid points for plotting (for 1 dim)
         random_dir (bool): if random directions should be used instead of PCA
         proz: margins for visualized space (in %)
@@ -300,7 +303,7 @@ def _visualize(model,filenames,N,random_dir=False,proz=0.5,v_vec=[],w_vec=[],ver
 
         vprint("Calculating Z-values of paths...")
         for val in progress_bar_wrapper(range(len(coefs))):
-            yo = cont_loss(model, parameter,[coefs[val][0]],coefs[val][1],get_v,get_w)
+            yo = cont_loss(model, trigger_fn, x,parameter,[coefs[val][0]],coefs[val][1],get_v,get_w)
             paths.append(yo)
 
         paths = np.array(paths)
@@ -334,7 +337,7 @@ def _visualize(model,filenames,N,random_dir=False,proz=0.5,v_vec=[],w_vec=[],ver
     Z = []
 
     for i in progress_bar_wrapper(range(len(y))):
-        vals = cont_loss(model,parameter,X[i],Y[i][0],get_v,get_w)
+        vals = cont_loss(model,trigger_fn, x,parameter,X[i],Y[i][0],get_v,get_w)
         Z.append(vals)
 
 
@@ -350,7 +353,7 @@ def _visualize(model,filenames,N,random_dir=False,proz=0.5,v_vec=[],w_vec=[],ver
 
 
 
-def visualize(model,filenames,N,path_to_file,random_dir=False,proz=0.5,v_vec=[],w_vec=[],verbose=False,layername=None,pca_dirs=None):
+def visualize(model,trigger_fn, x,filenames,N,path_to_file,random_dir=False,proz=0.5,v_vec=[],w_vec=[],verbose=False,layername=None,pca_dirs=None):
     """
     Wrapper for _visualize function that saves results as npz (numpy_compressed) file
 
@@ -371,18 +374,19 @@ def visualize(model,filenames,N,path_to_file,random_dir=False,proz=0.5,v_vec=[],
     if my_file.is_file():
         print("File {} already exists!".format(path_to_file+".npz"))
     else:
-        outputs,flag = _visualize(model,filenames,N,random_dir=random_dir,proz=proz,v_vec=v_vec,w_vec=w_vec,verbose=verbose,layername=layername,pca_dirs=pca_dirs)
+        outputs,flag = _visualize(model,trigger_fn,x,filenames,N,random_dir=random_dir,proz=proz,v_vec=v_vec,w_vec=w_vec,verbose=verbose,layername=layername,pca_dirs=pca_dirs)
         np.savez_compressed(path_to_file, a=outputs, b=flag)
 
 
 
-def visualize_eigendirs(model,filenames,N,path_to_file,dataloader,criterion,use_gpu=True,proz=0.5,percentage=0.05,num_iters=1,mode='LA',verbose=False):
+def visualize_eigendirs(model,trigger_fn,x,filenames,N,path_to_file,dataloader,criterion,use_gpu=True,proz=0.5,percentage=0.05,num_iters=1,mode='LA',verbose=False):
     """
     Wrapper for _visualize function that saves results as npz (numpy_compressed) file
 
     Args:
         model: nn model, with nn_model.Base_NNModel interface
         filenames: list of checkpoint names (files with parameters), orderered with the centerpoint last in list
+        trigger_fn: loss function that returns loss value
         N: number of grid points for plotting (for 1 dim)
         path_to_file: path and filename where the results are going to be saved at
         random_dir (bool): if random directions should be used instead of PCA
@@ -401,12 +405,12 @@ def visualize_eigendirs(model,filenames,N,path_to_file,dataloader,criterion,use_
         if eigenfile.is_file():
             print("File {} already exists! Continuing with loss landscape calculation...".format("eigen_"+path_to_file+"_vecs.npy"))
             vecs = np.load("eigen_"+path_to_file+"_vecs.npy")
-            outputs,flag = _visualize(model,filenames,N,proz=proz,v_vec=vecs[0,:],w_vec=vecs[1,:],verbose=verbose)
+            outputs,flag = _visualize(model,trigger_fn,x,filenames,N,proz=proz,v_vec=vecs[0,:],w_vec=vecs[1,:],verbose=verbose)
             np.savez_compressed(path_to_file, a=outputs, b=flag)
         else:
             hf.get_eigenvector(model.model,dataloader,criterion,filename="eigen_"+path_to_file,num_eigs=2,use_gpu=use_gpu,percentage=percentage,num_iters=num_iters,mode=mode)
             vecs = np.load("eigen_"+path_to_file+"_vecs.npy")
-            outputs,flag = _visualize(model,filenames,N,proz=proz,v_vec=vecs[0,:],w_vec=vecs[1,:],verbose=verbose)
+            outputs,flag = _visualize(model,trigger_fn,x, filenames,N,proz=proz,v_vec=vecs[0,:],w_vec=vecs[1,:],verbose=verbose)
             np.savez_compressed(path_to_file, a=outputs, b=flag)
 
 
