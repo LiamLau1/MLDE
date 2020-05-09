@@ -1,5 +1,8 @@
+__pycache__/
+*.py[cod]
 *.mp4
 *.svg
 *.pdf
 checkpoint
-minimum_0
+minimum_0*
+*npz
