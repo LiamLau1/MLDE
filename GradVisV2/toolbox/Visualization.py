@@ -235,7 +235,7 @@ def _visualize(model,trigger_fn, x, filenames,N,random_dir=False,proz=0.5,v_vec=
 
     Args:
         model: nn model, with nn_model.Base_NNModel interface
-        filenames: list of checkpoint names (files with parameters), orderered with the centerpoint last in list
+        filenames: list of checkpoint names (files with parameters), ordered with the centerpoint last in list
         trigger_fn: loss function that returns loss value
         N: number of grid points for plotting (for 1 dim)
         random_dir (bool): if random directions should be used instead of PCA

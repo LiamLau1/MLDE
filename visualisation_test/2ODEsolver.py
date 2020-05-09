@@ -147,7 +147,6 @@ class ODEsolver():
         x0 = self.initial_condition[0]
         y0 = self.initial_condition[1]
         differential_cost_term = tf.math.reduce_sum(self.differential_cost(x))
-        print(differential_cost_term)
         boundary_cost_term = tf.square(self.NN_output(np.asarray([[x0]]))[0][0] - y0)
         cost =  differential_cost_term/self.n + boundary_cost_term
         return cost
@@ -235,8 +234,11 @@ if __name__ == "__main__":
     # tells python that this refers to the global solver variable
     #global solver
     solver = ODEsolver(x, initial_condition, epochs, architecture, initializer, activation, optimizer)
+    #solver.cost_value(tf.convert_to_tensor(solver.x))
     #Training
     history = solver.train()
+    print(solver.cost_value(tf.convert_to_tensor(solver.x)))
+    #solver.cost_value(tf.convert_to_tensor(solver.x))
     epoch, loss = solver.get_loss(history)
 
     #--------------------------------------------------------------------
@@ -258,9 +260,9 @@ if __name__ == "__main__":
     plt.show()
 
     solver.neural_net.save_weights('./data/minimum_0')
-    nnmodel = nn_model.Tensorflow_NNModel(solver.neural_net, solver.cost_value, solver.x, './data/minimum_0')
-    vis.visualize(nnmodel,solver.cost_value,solver.x, './data/minimum_0', 80, './data/example',random_dir = True, proz = 0.5, verbose=True)
+    nnmodel = nn_model.Tensorflow_NNModel(solver.neural_net, solver.neural_net.loss, solver.x, './data/minimum_0')
+    vis.visualize(nnmodel,solver.neural_net.loss,solver.x, './data/minimum_0', 80, './data/example',random_dir = True, proz = 0.5, verbose=True)
     tplot.plot_loss_2D('./data/example.npz','./data/plot',is_log=False)
-    tplot.plot_loss_3D('./data/example.npz','./data/plot',is_log=False, degrees = 50)
+    tplot.plot_loss_3D('./data/example.npz','./data/plot3d',is_log=False, degrees = 50)
 
 #global solver

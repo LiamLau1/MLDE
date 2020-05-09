@@ -142,18 +142,6 @@ class ODEsolver():
             return differential_cost_term/self.n + boundary_cost_term
         return loss
     
-    def cost_value(self,x):
-        """
-        Returns cost_value for cost surface plotting
-        """
-        x0 = self.initial_condition[0]
-        y0 = self.initial_condition[1]
-        differential_cost_term = tf.math.reduce_sum(self.differential_cost(x))
-        boundary_cost_term = tf.square(self.NN_output(np.asarray([[x0]]))[0][0] - y0)
-        cost =  differential_cost_term/self.n + boundary_cost_term
-        return cost
-    
-    
     def train(self):
         """
         neural_net : The built neural network returned by self.neural_net_model
@@ -321,7 +309,7 @@ if __name__ == "__main__":
         #Optimizer used
         optimizer = tf.keras.optimizers.Adam(learning_rate = 0.001, beta_1 = 0.5, beta_2 = 0.5, epsilon = 1e-07)
         #Save predictions at each epoch
-        prediction_save = True
+        prediction_save = False
 
         #--------------------------------------------------------------------
         #------------------MODEL-DEFINITION-AND-TRAINING---------------------
@@ -332,7 +320,6 @@ if __name__ == "__main__":
         #Training
         history = solver.train()
         epoch, loss = solver.get_loss(history)
-        print(solver.cost_value(tf.convert_to_tensor(solver.x)))
 
         #--------------------------------------------------------------------
         #------------------PREDICTION----------------------------------------
@@ -342,10 +329,10 @@ if __name__ == "__main__":
         x_predict = x
         y_predict = solver.predict(x_predict)
         y_exact = np.exp(-x_predict)*np.sin(x_predict)
-        plt.plot(x_predict, y_exact, label = "Exact solution")
-        plt.plot(x_predict, y_predict, ".", label = "Neural network solution")
-        plt.legend()
-        plt.savefig("./data/prediction.pdf")
+        #plt.plot(x_predict, y_exact, label = "Exact solution")
+        #plt.plot(x_predict, y_predict, ".", label = "Neural network solution")
+        #plt.legend()
+        #plt.savefig("./data/prediction.pdf")
 
         #Plot the relative error
         relative_error = solver.relative_error(y_predict, y_exact)
@@ -356,14 +343,18 @@ if __name__ == "__main__":
         #------------------TRAINING-ANIMATION--------------------------------
         #--------------------------------------------------------------------
 
-        solver.training_animation(y_exact, y_predict, epoch, loss)
+        #solver.training_animation(y_exact, y_predict, epoch, loss)
 
         #--------------------------------------------------------------------
         #------------------LOSS-SURFACE--------------------------------
         #--------------------------------------------------------------------
         solver.neural_net.save_weights('./data/minimum_0')
-        nnmodel = nn_model.Tensorflow_NNModel(solver.neural_net, solver.cost_value, solver.x, './data/minimum_0')
-        vis.visualize(nnmodel,solver.cost_value,solver.x, './data/minimum_0', 80, './data/example',random_dir = True, proz = 0.5, verbose=True)
+        nnmodel = nn_model.Tensorflow_NNModel(solver.neural_net, solver.neural_net.loss, solver.x, './data/minimum_0')
+        vis.visualize(nnmodel,solver.neural_net.loss,solver.x, './data/minimum_0', 200, './data/example',random_dir = True, proz = 0.5, verbose=True)
         tplot.plot_loss_2D('./data/example.npz','./data/plot2d',is_log=False)
-        tplot.plot_loss_3D('./data/example.npz','./data/plot3d',is_log=False, degrees = 80)
+        tplot.plot_loss_3D('./data/example.npz','./data/plot3d',is_log=False, degrees = 120)
+        outs = np.load('./data/example.npz', allow_pickle=True)
+        outs = outs["a"]
+        tplot.plot3D(outs[0][0],outs[0][1],outs[0][2])
+        np.min(outs[0][2])
 

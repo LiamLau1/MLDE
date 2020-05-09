@@ -63,6 +63,7 @@ class Tensorflow_NNModel(Base_NNModel):
         if filename is None:
             return self.parameter
         else:
+            print(filename)
             self.model.load_weights(filename)
             tmp_params = self._tf_params_to_numpy()
             # restore old state
@@ -86,7 +87,7 @@ class Tensorflow_NNModel(Base_NNModel):
             average_loss += current_loss
         average_loss /= self.number_of_steps
         """
-        average_loss = trigger_fn(tf.convert_to_tensor(x))
+        average_loss = trigger_fn(1,1) #trigger_fn(tf.convert_to_tensor(x))
         print("Average Loss: "+str(average_loss))
         return average_loss
 
