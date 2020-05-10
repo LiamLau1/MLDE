@@ -52,7 +52,8 @@ class Tensorflow_NNModel(Base_NNModel):
         print("Setting up Model ...")
         self.number_of_steps = number_of_steps # maximum number of iteration steps per evaluation
         self.model = model
-        self.total_loss = trigger_fn
+        # doesn't matter what trigger_fn input is as they are not used
+        self.total_loss = trigger_fn(1,1)
         print("Initializing Parameters...")
         self.parameter = self._tf_params_to_numpy()
         #TODO: make dict of numpy arrays from self.parameter
@@ -63,7 +64,6 @@ class Tensorflow_NNModel(Base_NNModel):
         if filename is None:
             return self.parameter
         else:
-            print(filename)
             self.model.load_weights(filename)
             tmp_params = self._tf_params_to_numpy()
             # restore old state

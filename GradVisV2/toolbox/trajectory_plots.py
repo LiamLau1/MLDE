@@ -6,7 +6,7 @@ from IPython.core.display import display, HTML
 import json
 import numpy as np
 
-def plot3D(X, Y, Z, height=600, xlabel = "X", ylabel = "Y", zlabel = "Z", initialCamera = None):
+def plot3D(X, Y, Z, path_to_file, height=600, xlabel = "X", ylabel = "Y", zlabel = "Z", initialCamera = None):
     """
     Plots the loss landscape in an interactive way.
 
@@ -50,6 +50,8 @@ def plot3D(X, Y, Z, height=600, xlabel = "X", ylabel = "Y", zlabel = "Z", initia
        </script>
     """
     htmlCode = "<iframe srcdoc='"+visCode+"' width='100%' height='" + str(height) + "px' style='border:0;' scrolling='no'> </iframe>"
+    with open(path_to_file,'w') as f:
+        f.write(htmlCode)
     display(HTML(htmlCode))
 
 

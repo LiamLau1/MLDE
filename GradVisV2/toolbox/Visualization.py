@@ -1,4 +1,4 @@
-# coding: utf-8
+#coding: utf-8
 #import torch
 import numpy as np
 from pathlib import Path
@@ -68,7 +68,6 @@ def get_pca_vec(model, filenames, layer_names, pca_direcs=None):
         Two vectors with highest variance
     """
     mats = []
-
     for file in filenames:
         testi = model.get_parameters(file)
         parlis = np.ndarray([0])
@@ -84,7 +83,8 @@ def get_pca_vec(model, filenames, layer_names, pca_direcs=None):
 
 
         for key in testi:
-            if "weight" not in key and "bias" not in key:
+            # changed from "weight" to "kernel"
+            if "kernel" not in key and "bias" not in key:
                 testi[key] *= 0
             parlis = np.concatenate((parlis,testi[key]), axis=None)
         pas = parlis
@@ -93,7 +93,8 @@ def get_pca_vec(model, filenames, layer_names, pca_direcs=None):
     mats = np.vstack(mats)
     mats_new = mats[:-1]-mats[-1]
 
-    data = mats_new
+    #data = mats_new
+    data = np.array([mats[0],]*31)
 
     if pca_direcs is not None:
         if len(pca_direcs) != 2:

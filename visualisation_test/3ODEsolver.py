@@ -1,3 +1,6 @@
+import os
+import sys
+sys.path.append("../GradVisV2/toolbox")
 import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
@@ -9,44 +12,15 @@ plt.rc('font', family='serif')
 import time
 import colorama
 from matplotlib import animation
+import Visualization as vis
+import nn_model
+import trajectory_plots as tplot
 
 
 #Random seed initialization
 seed = 1234
 np.random.seed(seed)
 tf.random.set_seed(seed)
-
-
-
-class Neural_net_parameters():
-    
-    def __init__(self):
-
-        self.Dict_initializers = {"GlorotNormal"  : "GlorotNormal",
-                     "GlorotUniform" : "GlorotUniform",
-                     "Ones"          : "Ones",
-                     "RandomNormal"  : "RandomNormal",
-                     "RandomUniform" : "RandomUniform",
-                     "Zeros"         : "Zeros"}
-        
-        self.Dict_activations = {"relu"         : tf.nn.relu,
-                            "sigmoid"      : tf.nn.sigmoid,
-                            "tanh"         : tf.nn.tanh,
-                            "elu"          : tf.nn.elu,
-                            "hard sigmoid" : tf.keras.activations.hard_sigmoid,
-                            "linear"       : tf.keras.activations.linear,
-                            "selu"         : tf.keras.activations.selu,
-                            "softmax"      : tf.keras.activations.softmax}
-        
-        self.Dict_optimizers = {"Adadelta" : tf.keras.optimizers.Adadelta(learning_rate = 0.001, rho = 0.95, epsilon = 1e-07),
-                           "Adagrad"  : tf.keras.optimizers.Adagrad(learning_rate = 0.001, initial_accumulator_value = 0.1, epsilon = 1e-07),
-                           "Adam"     : tf.keras.optimizers.Adam(learning_rate = 0.001, beta_1 = 0.9, beta_2 = 0.999, epsilon = 1e-07, amsgrad = False),
-                           "Adamax"   : tf.keras.optimizers.Nadam(learning_rate = 0.001, beta_1 = 0.9, beta_2 = 0.999, epsilon = 1e-07),
-                           "Nadam"    : tf.keras.optimizers.Nadam(learning_rate = 0.001, beta_1 = 0.9, beta_2 = 0.999, epsilon = 1e-07),
-                           "RMSprop"  : tf.keras.optimizers.RMSprop(learning_rate = 0.001, rho = 0.9, momentum = 0.0, epsilon = 1e-07, centered = False),
-                           "SGD"      : tf.keras.optimizers.SGD(learning_rate = 0.01, momentum = 0.0, nesterov = False)}
-        
-        self.Dict = {"initializer" : self.Dict_initializers, "activation" : self.Dict_activations, "optimizer" : self.Dict_optimizers}
 
 
 
@@ -168,7 +142,6 @@ class ODEsolver():
             return differential_cost_term/self.n + boundary_cost_term
         return loss
     
-    
     def train(self):
         """
         neural_net : The built neural network returned by self.neural_net_model
@@ -234,23 +207,11 @@ class ODEsolver():
         """
         if len(y_exact) != len(y_predict):
             raise Exception("y_predict and y_exact do not have the same shape.")
-        relative_error = np.abs(y_exact - np.reshape(y_predict, (100)))/np.abs(y_exact)
+        relative_error = tf.keras.losses.mean_absolute_error(y_exact, y_predict) 
         return relative_error
 
 
-    def mean_relative_error(self, y_predict, y_exact):
-    	"""
-    	y_predict : array of predicted solution
-        y_exact : array of exact solution
-        Returns the single mean relative error value of 
-        the neural network solution given the exact solution.
-    	"""
-    	relative_error = self.relative_error(y_predict, y_exact)
-    	relative_error = relative_error[relative_error < 1E100]
-    	return np.mean(relative_error)
-
-
-    def absolute_error(self, y_predict, y_exact):
+    def MAE(self, y_predict, y_exact):
         """
         y_predict : array of predicted solution
         y_exact : array of exact solution
@@ -259,8 +220,8 @@ class ODEsolver():
         """
         if len(y_exact) != len(y_predict):
             raise Exception("y_predict and y_exact do not have the same shape.")
-        absolute_error = np.abs(y_exact - np.reshape(y_predict, (100)))
-        return absolute_error
+        mae = tf.keras.losses.MAE(y_exact, y_predict)
+        return mae
     
     
     def get_predictions(self):
@@ -279,17 +240,11 @@ class ODEsolver():
         the neural network solution and the cost function as functions of epochs.
         This function needs the model to be trained and requires the outputs of get_loss.
         """
-        #Position of loss function (can be "upper right" or "lower right")
-        position = "lower right"
-        
         if not prediction_save:
             raise Exception("The predictions have not been saved.")
         fig, ax = plt.subplots()
         ax1 = plt.axes()
-        if position == "lower right":
-            ax2 = fig.add_axes([0.58, 0.2, 0.3, 0.2])
-        if position == "upper right":
-            ax2 = fig.add_axes([0.58, 0.65, 0.3, 0.2])
+        ax2 = fig.add_axes([0.58, 0.2, 0.3, 0.2])
 
         frames = []
 
@@ -315,39 +270,18 @@ class ODEsolver():
 
         for i in range(self.epochs):
             y = predictions[i]
-            frame1, = ax1.plot(x, y, ".", color = "C0", markersize = 3)
+            frame1, = ax1.plot(x, y, ".", color = "C0")
             x_loss_points.append(x_loss[i])
             y_loss_points.append(y_loss[i])
             frame2, = ax2.semilogy(x_loss_points, y_loss_points, color = "C0")
             frames.append([frame1, frame2])
 
-        ani = animation.ArtistAnimation(fig, frames, interval = 10, blit = True)
-        plt.show()
-        
-        
-    def plot_solution(self, x_predict, y_predict, y_exact):
-        """
-        Plot the neural net solution with the exact solution
-        including the relative error.
-        """
-        fig = plt.figure()
-
-        #Exact and numerical solution
-        axe1 = fig.add_axes([0.17, 0.35, 0.75, 0.6])
-        axe1.set_ylabel("$\hat{f}$", fontsize = 15)
-        axe1.set_xticks([])
-        #Relative error
-        axe2 = fig.add_axes([0.17, 0.1, 0.75, 0.25])
-        axe2.set_ylabel("Relative \n error", fontsize = 15)
-        axe2.set_xlabel("$x$", fontsize = 15)
-        axe2.set_yscale('log')
-
-        axe1.plot(x_predict, y_exact, color = "C1", label = "Exact solution")
-        axe1.plot(x_predict, y_predict, ".", color = "C0", label = "Neural network solution", markersize = 3)
-        axe1.legend()
-
-        axe2.plot(x_predict, self.relative_error(y_predict, y_exact), color = "C0")
-        plt.show()
+        ani = animation.ArtistAnimation(fig, frames, interval = 20, blit = True)
+        # Set up formatting for the movie files
+        Writer = animation.writers['ffmpeg']
+        writer = Writer(fps=15, metadata=dict(artist='Me'), bitrate=1800)
+        ani.save('./data/animation.mp4', writer=writer)
+        #plt.show()
         
     
         
@@ -356,56 +290,73 @@ class ODEsolver():
 
 if __name__ == "__main__":
 
-	#--------------------------------------------------------------------
-	#-----------------PARAMETER-INITIALIZATION---------------------------
-	#--------------------------------------------------------------------
+        #--------------------------------------------------------------------
+        #-----------------PARAMETER-INITIALIZATION---------------------------
+        #--------------------------------------------------------------------
 
-	#Import the neural network parameters
-	nnp = Neural_net_parameters()
-	Dict = nnp.Dict
+        #Training domain
+        x = np.linspace(0, 1, 100)
+        #Initial conditions
+        initial_condition = (0, 0)
+        #Number of epochs
+        epochs = 2000
+        #Structure of the neural net (only hidden layers)
+        architecture = [10]
+        #Initializer used
+        initializer = 'GlorotNormal'
+        #Activation function used
+        activation = tf.nn.sigmoid
+        #Optimizer used
+        optimizer = tf.keras.optimizers.Adam(learning_rate = 0.001, beta_1 = 0.5, beta_2 = 0.5, epsilon = 1e-07)
+        #Save predictions at each epoch
+        prediction_save = False
 
-	#Training domain
-	x = np.linspace(0, 1, 100)
-	#Initial conditions
-	initial_condition = (0, 0)
-	#Number of epochs
-	epochs = 10000
-	#Structure of the neural net (only hidden layers)
-	architecture = [10]
-	#Initializer used
-	initializer = Dict["initializer"]["GlorotNormal"]
-	#Activation function used
-	activation = Dict["activation"]["sigmoid"]
-	#Optimizer used
-	optimizer = Dict["optimizer"]["Adam"]
-	#Save predictions at each epoch
-	prediction_save = False
+        #--------------------------------------------------------------------
+        #------------------MODEL-DEFINITION-AND-TRAINING---------------------
+        #--------------------------------------------------------------------
 
-	#--------------------------------------------------------------------
-	#------------------MODEL-DEFINITION-AND-TRAINING---------------------
-	#--------------------------------------------------------------------
+        #Class definition
+        solver = ODEsolver(x, initial_condition, epochs, architecture, initializer, activation, optimizer, prediction_save)
+        #Training
+        history = solver.train()
+        epoch, loss = solver.get_loss(history)
 
-	#Class definition
-	solver = ODEsolver(x, initial_condition, epochs, architecture, initializer, activation, optimizer, prediction_save)
-	#Training
-	history = solver.train()
-	epoch, loss = solver.get_loss(history)
+        #--------------------------------------------------------------------
+        #------------------PREDICTION----------------------------------------
+        #--------------------------------------------------------------------
 
-	#--------------------------------------------------------------------
-	#------------------PREDICTION----------------------------------------
-	#--------------------------------------------------------------------
+        #Plot the exact and the neural net solution
+        x_predict = x
+        y_predict = solver.predict(x_predict)
+        y_exact = np.exp(-x_predict)*np.sin(x_predict)
+        #plt.plot(x_predict, y_exact, label = "Exact solution")
+        #plt.plot(x_predict, y_predict, ".", label = "Neural network solution")
+        #plt.legend()
+        #plt.savefig("./data/prediction.pdf")
 
-	#Plot the exact and the neural net solution
-	x_predict = x
-	y_predict = solver.predict(x_predict)
-	y_exact = np.exp(-x_predict)*np.sin(x_predict)
-	solver.plot_solution(x_predict, y_predict, y_exact)
-	print(solver.mean_relative_error(y_predict, y_exact))
+        #Plot the relative error
+        relative_error = solver.relative_error(y_predict, y_exact)
+        #plt.semilogy(x_predict, relative_error)
+        #plt.show()
 
-	#--------------------------------------------------------------------
-	#------------------TRAINING-ANIMATION--------------------------------
-	#--------------------------------------------------------------------
+        #--------------------------------------------------------------------
+        #------------------TRAINING-ANIMATION--------------------------------
+        #--------------------------------------------------------------------
 
-	#solver.training_animation(y_exact, y_predict, epoch, loss)
+        #solver.training_animation(y_exact, y_predict, epoch, loss)
 
+        #--------------------------------------------------------------------
+        #------------------LOSS-SURFACE--------------------------------
+        #--------------------------------------------------------------------
+        solver.neural_net.save_weights('./data/minimum_0')
+        nnmodel = nn_model.Tensorflow_NNModel(solver.neural_net, solver.neural_net.loss, solver.x, './data/minimum_0')
+        # proz uses to scale from [-5,5] domain for loss surface plotting, find a spacing n such that it gets as close to 0 as possible
+        #filenames needs to be an array of files
+        vis.visualize(nnmodel,solver.neural_net.loss,solver.x, ['./data/minimum_0'], 200, './data/example',random_dir = True, proz = 0.5, verbose=True)
+        tplot.plot_loss_2D('./data/example.npz','./data/plot2d',is_log=False)
+        tplot.plot_loss_3D('./data/example.npz','./data/plot3d',is_log=False, degrees = 120)
+        outs = np.load('./data/example.npz', allow_pickle=True)
+        outs = outs["a"]
+        tplot.plot3D(outs[0][0],outs[0][1],outs[0][2])
+        np.min(outs[0][2])
 
