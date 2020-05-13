@@ -81,7 +81,7 @@ def plot_loss(X,Y,Z,path_x=[],path_y=[],path_z=[],filename="out_3D", height=10,d
         normalize = matplotlib.colors.Normalize(vmin=0, vmax=NPOINTS)
         colors = [cmap(normalize(value)) for value in range(NPOINTS)][::-1]
         ax.plot(path_x,path_y,scale(path_z),"k-",zorder=4)
-        ax.scatter(path_x,path_y,scale(path_z),color=colors,marker="o")
+        #ax.scatter(path_x,path_y,scale(path_z),color=colors,marker="o")
 
         for k in range(NPOINTS):
             ax.plot([path_x[k]],[path_y[k]],scale(path_z[k]), markerfacecolor=colors[k], markeredgecolor=colors[k], marker='o', markersize=5, alpha=1,zorder=10)
@@ -99,7 +99,7 @@ def plot_loss(X,Y,Z,path_x=[],path_y=[],path_z=[],filename="out_3D", height=10,d
 
 
 
-def contour_loss(X,Y,Z,path_x=[],path_y=[],labels=[], filename="out", is_log=False):
+def contour_loss(X,Y,Z,contours,path_x=[],path_y=[],labels=[],  filename="out", is_log=False):
     """
     Creates a 2D-plot of the loss and with the trajectory taken.
 
@@ -116,7 +116,7 @@ def contour_loss(X,Y,Z,path_x=[],path_y=[],labels=[], filename="out", is_log=Fal
         scale = lambda x: x
 
     fig = plt.figure(num=None, figsize=(10, 8), dpi=80, facecolor='w', edgecolor='k', frameon=False)
-    CS = plt.contour(X, Y, scale(Z),100,zorder=0)
+    CS = plt.contour(X, Y, scale(Z),contours,zorder=0)
 
     if len(path_x)!=0 and len(path_y)!=0:
         NPOINTS=len(path_x)
@@ -141,7 +141,7 @@ def contour_loss(X,Y,Z,path_x=[],path_y=[],labels=[], filename="out", is_log=Fal
     plt.close(fig)
 
 
-def plot_loss_2D(path_to_file,filename="out", is_log=False):
+def plot_loss_2D(path_to_file,contours,filename="out",is_log=False):
     """
     Wrapper for contour_loss function. Opens the .npz file created by the visualize function and creates a 2D plot.
 
@@ -153,18 +153,15 @@ def plot_loss_2D(path_to_file,filename="out", is_log=False):
     outs = np.load(path_to_file, allow_pickle=True)
     flag = outs["b"]
     outs = outs["a"]
-    print(outs[0][0])
-    print(outs[0][1])
-    print(outs[0][2])
 
     if flag == 1:
-        contour_loss(outs[0][0],outs[0][1],outs[0][2],path_x=outs[1][0],path_y=outs[1][1], filename=filename, is_log=is_log)
+        contour_loss(outs[0][0],outs[0][1],outs[0][2],contours,path_x=outs[1][0],path_y=outs[1][1],  filename=filename, is_log=is_log)
 
     elif flag == 2:
-        contour_loss(outs[0][0],outs[0][1],outs[0][2],path_x=outs[1][0],path_y=outs[1][1],labels=outs[2][0], filename=filename, is_log=is_log)
+        contour_loss(outs[0][0],outs[0][1],outs[0][2],contours,path_x=outs[1][0],path_y=outs[1][1],labels=outs[2][0], filename=filename, is_log=is_log)
 
     elif flag == 3:
-        contour_loss(outs[0][0],outs[0][1],outs[0][2], filename=filename, is_log=is_log)
+        contour_loss(outs[0][0],outs[0][1],outs[0][2], contours, filename=filename, is_log=is_log)
 
 
 def plot_loss_3D(path_to_file, filename="out_3D", height=10,degrees=210, is_log=False):

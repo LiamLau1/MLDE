@@ -91,10 +91,10 @@ def get_pca_vec(model, filenames, layer_names, pca_direcs=None):
         #pas = get_params(parlis)
         mats.append(pas)
     mats = np.vstack(mats)
-    mats_new = mats[:-1]-mats[-1]
+    #mats_new = mats[:-1]-mats[-1]
 
     #data = mats_new
-    data = np.array([mats[0],]*31)
+    data = mats
 
     if pca_direcs is not None:
         if len(pca_direcs) != 2:

@@ -1,3 +1,6 @@
+import os
+import sys
+sys.path.append("../GradVisV2/toolbox")
 import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
@@ -9,6 +12,9 @@ plt.rc('font', family='serif')
 import time
 import colorama
 from matplotlib import animation
+import Visualization as vis
+import nn_model
+import trajectory_plots as tplot
 
 
 #Random seed initialization
@@ -23,28 +29,28 @@ class Neural_net_parameters():
     def __init__(self):
 
         self.Dict_initializers = {"GlorotNormal"  : "GlorotNormal",
-                     "GlorotUniform" : "GlorotUniform",
-                     "Ones"          : "Ones",
-                     "RandomNormal"  : "RandomNormal",
-                     "RandomUniform" : "RandomUniform",
-                     "Zeros"         : "Zeros"}
+                                  "GlorotUniform" : "GlorotUniform",
+                                  "Ones"          : "Ones",
+                                  "RandomNormal"  : "RandomNormal",
+                                  "RandomUniform" : "RandomUniform",
+                                  "Zeros"         : "Zeros"}
         
         self.Dict_activations = {"relu"         : tf.nn.relu,
-                            "sigmoid"      : tf.nn.sigmoid,
-                            "tanh"         : tf.nn.tanh,
-                            "elu"          : tf.nn.elu,
-                            "hard sigmoid" : tf.keras.activations.hard_sigmoid,
-                            "linear"       : tf.keras.activations.linear,
-                            "selu"         : tf.keras.activations.selu,
-                            "softmax"      : tf.keras.activations.softmax}
+                                 "sigmoid"      : tf.nn.sigmoid,
+                                 "tanh"         : tf.nn.tanh,
+                                 "elu"          : tf.nn.elu,
+                                 "hard sigmoid" : tf.keras.activations.hard_sigmoid,
+                                 "linear"       : tf.keras.activations.linear,
+                                 "selu"         : tf.keras.activations.selu,
+                                 "softmax"      : tf.keras.activations.softmax}
         
         self.Dict_optimizers = {"Adadelta" : tf.keras.optimizers.Adadelta(learning_rate = 0.001, rho = 0.95, epsilon = 1e-07),
-                           "Adagrad"  : tf.keras.optimizers.Adagrad(learning_rate = 0.001, initial_accumulator_value = 0.1, epsilon = 1e-07),
-                           "Adam"     : tf.keras.optimizers.Adam(learning_rate = 0.001, beta_1 = 0.9, beta_2 = 0.999, epsilon = 1e-07, amsgrad = False),
-                           "Adamax"   : tf.keras.optimizers.Nadam(learning_rate = 0.001, beta_1 = 0.9, beta_2 = 0.999, epsilon = 1e-07),
-                           "Nadam"    : tf.keras.optimizers.Nadam(learning_rate = 0.001, beta_1 = 0.9, beta_2 = 0.999, epsilon = 1e-07),
-                           "RMSprop"  : tf.keras.optimizers.RMSprop(learning_rate = 0.001, rho = 0.9, momentum = 0.0, epsilon = 1e-07, centered = False),
-                           "SGD"      : tf.keras.optimizers.SGD(learning_rate = 0.01, momentum = 0.0, nesterov = False)}
+                                "Adagrad"  : tf.keras.optimizers.Adagrad(learning_rate = 0.001, initial_accumulator_value = 0.1, epsilon = 1e-07),
+                                "Adam"     : tf.keras.optimizers.Adam(learning_rate = 0.001, beta_1 = 0.9, beta_2 = 0.999, epsilon = 1e-07, amsgrad = False),
+                                "Adamax"   : tf.keras.optimizers.Nadam(learning_rate = 0.001, beta_1 = 0.9, beta_2 = 0.999, epsilon = 1e-07),
+                                "Nadam"    : tf.keras.optimizers.Nadam(learning_rate = 0.001, beta_1 = 0.9, beta_2 = 0.999, epsilon = 1e-07),
+                                "RMSprop"  : tf.keras.optimizers.RMSprop(learning_rate = 0.001, rho = 0.9, momentum = 0.0, epsilon = 1e-07, centered = False),
+                                "SGD"      : tf.keras.optimizers.SGD(learning_rate = 0.01, momentum = 0.0, nesterov = False)}
         
         self.Dict = {"initializer" : self.Dict_initializers, "activation" : self.Dict_activations, "optimizer" : self.Dict_optimizers}
 
@@ -52,7 +58,7 @@ class Neural_net_parameters():
 
 class ODEsolver():
     
-    def __init__(self, x, initial_condition, epochs, architecture, initializer, activation, optimizer, prediction_save):
+    def __init__(self, x, initial_condition, epochs, architecture, initializer, activation, optimizer, prediction_save, weights_save):
         """
         x : training domain (ex: x = np.linspace(0, 1, 100))
         initial_condition : initial condition including x0 and y0 (ex: initial_condition = (x0 = 0, y0 = 1))
@@ -61,6 +67,7 @@ class ODEsolver():
         activation : activation function (ex: tf.nn.sigmoid)
         optimizer : minimization optimizer including parameters (ex: tf.keras.optimizers.Adam(learning_rate = 0.001, beta_1 = 0.5, beta_2 = 0.5, epsilon = 1e-07))
         prediciton_save : bool to save predicitons at each epoch during training (ex: prediction_save = False)
+        weights_save : bool to save the weights at each epoch (ex: weights_save = True)
         """
         colorama.init()
         self.GREEN = colorama.Fore.GREEN
@@ -83,8 +90,14 @@ class ODEsolver():
         x = tf.reshape(x, (self.n, 1))
         self.neural_net.compile(loss = self.custom_cost(x), optimizer = self.optimizer, experimental_run_tf_function = False)
         print("------- Model compiled -------")
+
+        #Raise an exception is both prediction_save and weights_save are True
+        if prediction_save and weights_save:
+        	raise Exception("Both prediciton_save and weights_save are set to True.")
         if prediction_save:
             self.predictions = []
+        if weights_save:
+        	self.weights = []
         
         
         
@@ -179,6 +192,7 @@ class ODEsolver():
         x = tf.reshape(x, (self.n, 1))
         neural_net = self.neural_net
         
+        #Train and save the predicitons
         if prediction_save:
             predictions = self.predictions
 
@@ -194,7 +208,29 @@ class ODEsolver():
             print(f"{self.GREEN}---   %s seconds ---  " % (time.time() - start_time))
             print(f"{self.RESET}")
             predictions = tf.reshape(predictions, (self.epochs, self.n))
+        
+        #Train and save the weights
+        if weights_save:
+            weights = self.weights
+
+            #Define custom callback for weights during training
+            class PredictionCallback(tf.keras.callbacks.Callback):
+                def on_epoch_end(self, epoch, log={}):
+                    modelWeights = []
+                    for i in range(1, len(neural_net.layers)):
+                        layer_weights = neural_net.layers[i].get_weights()[0]
+                        layer_biases = neural_net.layers[i].get_weights()[1]
+                        modelWeights.append(layer_weights)
+                        modelWeights.append(layer_biases)
+                    weights.append(modelWeights)
+                    print('Weights and biases saved at epoch: {}'.format(epoch))
             
+            start_time = time.time()
+            history = neural_net.fit(x = x, y = x, batch_size = self.n, epochs = self.epochs, callbacks = [PredictionCallback()])
+            print(f"{self.GREEN}---   %s seconds ---  " % (time.time() - start_time))
+            print(f"{self.RESET}")
+
+        #Train without any saving
         else:
             start_time = time.time()
             history = neural_net.fit(x = x, y = x, batch_size = self.n, epochs = self.epochs)
@@ -322,7 +358,10 @@ class ODEsolver():
             frames.append([frame1, frame2])
 
         ani = animation.ArtistAnimation(fig, frames, interval = 10, blit = True)
-        plt.show()
+        Writer = animation.writers['ffmpeg']
+        writer = Writer(fps=15, metadata=dict(artist='Me'), bitrate=1800)
+        ani.save('./data/animation.mp4', writer=writer)
+        #plt.show()
         
         
     def plot_solution(self, x_predict, y_predict, y_exact):
@@ -369,7 +408,7 @@ if __name__ == "__main__":
 	#Initial conditions
 	initial_condition = (0, 0)
 	#Number of epochs
-	epochs = 10000
+	epochs = 100
 	#Structure of the neural net (only hidden layers)
 	architecture = [10]
 	#Initializer used
@@ -378,15 +417,17 @@ if __name__ == "__main__":
 	activation = Dict["activation"]["sigmoid"]
 	#Optimizer used
 	optimizer = Dict["optimizer"]["Adam"]
-	#Save predictions at each epoch
+	#Save predictions at each epoch in self.predictions
 	prediction_save = False
+	#Save the weights at each epoch in self.weights
+	weights_save = True
 
 	#--------------------------------------------------------------------
 	#------------------MODEL-DEFINITION-AND-TRAINING---------------------
 	#--------------------------------------------------------------------
 
 	#Class definition
-	solver = ODEsolver(x, initial_condition, epochs, architecture, initializer, activation, optimizer, prediction_save)
+	solver = ODEsolver(x, initial_condition, epochs, architecture, initializer, activation, optimizer, prediction_save, weights_save)
 	#Training
 	history = solver.train()
 	epoch, loss = solver.get_loss(history)
@@ -395,12 +436,14 @@ if __name__ == "__main__":
 	#------------------PREDICTION----------------------------------------
 	#--------------------------------------------------------------------
 
+	"""
 	#Plot the exact and the neural net solution
 	x_predict = x
 	y_predict = solver.predict(x_predict)
 	y_exact = np.exp(-x_predict)*np.sin(x_predict)
 	solver.plot_solution(x_predict, y_predict, y_exact)
 	print(solver.mean_relative_error(y_predict, y_exact))
+	"""
 
 	#--------------------------------------------------------------------
 	#------------------TRAINING-ANIMATION--------------------------------
@@ -408,4 +451,10 @@ if __name__ == "__main__":
 
 	#solver.training_animation(y_exact, y_predict, epoch, loss)
 
+	#--------------------------------------------------------------------
+	#------------------WEIGHTS-------------------------------------------
+	#--------------------------------------------------------------------
 
+	weights = solver.weights
+	print(np.shape(weights))
+	print(weights[0])
